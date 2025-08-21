@@ -51,12 +51,11 @@ plot_intensities(res)
 # Part 2
 println("Setting up inhomogeneous system...")
 
-sys_inhom = to_inhomogeneous(repeat_periodically(sys, (2, 2, 2))) # TODO: change to 10 10 10
+sys_inhom = to_inhomogeneous(repeat_periodically(sys, (1, 1, 1))) # TODO: change to 10 10 10
 
 for (index, (site1, site2, offset)) in enumerate(symmetry_equivalent_bonds(sys_inhom, Bond(1, 1, [1, 0, 0])))
-	println(index, site1, site2, offset)
-	noise = 0.0
-	set_exchange_at!(sys_inhom, 1.0 + noise, site1, site2; offset)
+	
+	set_exchange_at!(sys_inhom, 13.0, site1, site2; offset)
 end
 
 println("Minimizing energy of inhomogeneous system...")
