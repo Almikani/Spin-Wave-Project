@@ -8,54 +8,71 @@ latvecs["Fe"] = lattice_vectors(10.337, 6.011, 4.695, 90, 90, 90)
 
 println("Creating Crystal...")
 
-cryst = Crystal(latvecs["Ni"], [[1/4, 1/4, 0]], 62, types = ["Ni"])
+cryst = Crystal(latvecs["Ni"], [[1/4, 1/4, 0]], 62)
 sys = System(cryst, [1 => Moment(s=1, g=2)], :dipole_uncorrected)
 
-println("Settin up exchange interactions...")
+x = 0.3 # Fraction of iron
 
-Jbc =  1.036
-Jb  =  0.6701
-Jc  = -0.0469
-Jac = -0.1121
-Jab =  0.2977
-Da  =  0.1969
-Db  =  0.9097
-Dc  =  0.0
-set_exchange!(sys, Jbc, Bond(2, 3, [0, 0, 0]))
-set_exchange!(sys, Jc , Bond(1, 1, [0, 0,-1]))
-set_exchange!(sys, Jb , Bond(1, 1, [0, 1, 0]))
-set_exchange!(sys, Jab, Bond(1, 2, [0, 0, 0]))
-set_exchange!(sys, Jab, Bond(3, 4, [0, 0, 0]))
-set_exchange!(sys, Jac, Bond(3, 1, [0, 0, 0]))
-set_exchange!(sys, Jac, Bond(4, 2, [0, 0, 0]))
-set_onsite_coupling!(sys, S -> Da*S[1]^2 + Db*S[2]^2 + Dc*S[3]^2, 1)
+# println("Settin up exchange interactions...")
 
-println("Minimizing energy...")
+# Jbc =  1.036
+# Jb  =  0.6701
+# Jc  = -0.0469
+# Jac = -0.1121
+# Jab =  0.2977
+# Da  =  0.1969
+# Db  =  0.9097
+# Dc  =  0.0
+# set_exchange!(sys, Jbc, Bond(2, 3, [0, 0, 0]))
+# set_exchange!(sys, Jc , Bond(1, 1, [0, 0,-1]))
+# set_exchange!(sys, Jb , Bond(1, 1, [0, 1, 0]))
+# set_exchange!(sys, Jab, Bond(1, 2, [0, 0, 0]))
+# set_exchange!(sys, Jab, Bond(3, 4, [0, 0, 0]))
+# set_exchange!(sys, Jac, Bond(3, 1, [0, 0, 0]))
+# set_exchange!(sys, Jac, Bond(4, 2, [0, 0, 0]))
+# set_onsite_coupling!(sys, S -> Da*S[1]^2 + Db*S[2]^2 + Dc*S[3]^2, 1)
 
-randomize_spins!(sys)
-minimize_energy!(sys)
-plot_spins(sys; color=[S[3] for S in sys.dipoles])
+# println("Minimizing energy...")
 
-println("Setting up qpath...")
+# randomize_spins!(sys)
+# minimize_energy!(sys)
+# plot_spins(sys; color=[S[3] for S in sys.dipoles])
+
+# println("Setting up qpath...")
 
 qs = [[0, 0.5, 0], [0, 2, 0]]
 path = q_space_path(cryst, qs, 600)
 println("Performing spin wave calculations...")
 
-kernel = lorentzian(fwhm=0.4)
-energies = range(0.0, 12.0, 150)
-swt = SpinWaveTheory(sys; measure=ssf_perp(sys))
-res = intensities(swt, path; energies, kernel)
-plot_intensities(res)
-
 # Part 2
 println("Setting up inhomogeneous system...")
 
-sys_inhom = to_inhomogeneous(repeat_periodically(sys, (1, 1, 1))) # TODO: change to 10 10 10
+sys_inhom = to_inhomogeneous(repeat_periodically(sys, (2, 2, 2))) # TODO: change to 10 10 10
+
+site_atoms = Dict()
+
+# Populate the system randomly with Ni and Fe
+for site in eachsite(sys_inhom)
+	if rand() > x
+		site_atoms[site] = "Ni"
+	else
+		site_atoms[site] = "Fe"
+	end
+end
+
+
 
 for (index, (site1, site2, offset)) in enumerate(symmetry_equivalent_bonds(sys_inhom, Bond(1, 1, [1, 0, 0])))
-	
-	set_exchange_at!(sys_inhom, 13.0, site1, site2; offset)
+	if site_atoms[site1] == "Fe" && site_atoms[site2] == "Fe"
+		# Set Fe-Fe exchange
+		set_exchange_at!(sys_inhom, 13.0, site1, site2; offset)
+	elseif site_atoms[site1] == "Ni" && site_atoms[site2] == "Ni"
+		# Set Ni-Ni exchange
+		set_exchange_at!(sys_inhom, 10.0, site1, site2; offset)
+	else
+		# Set Ni-Fe exchange
+		set_exchange_at!(sys_inhom, 0, site1, site2; offset)
+	end
 end
 
 println("Minimizing energy of inhomogeneous system...")
