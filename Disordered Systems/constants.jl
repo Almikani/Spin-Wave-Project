@@ -41,14 +41,14 @@ J = Dict(
         "ab" => 0.14,
         "ac" => 0.05,
     ),
-    "NiFe" => Dict(
-        "bc" => 0.77,
-        "b"  => 0.30,
-        "c"  => 0.14,
-        "ab" => 0.14,
-        "ac" => 0.05,
-    ),
+    "NiFe" => Dict(),  # Placeholder (will be filled in below)
 )
+# Adds NiFe exchange couplings to dict
+J["NiFe"]["bc"] = (J["NiNi"]["bc"] + J["FeFe"]["bc"])/2
+J["NiFe"]["b"]  = (J["NiNi"]["b" ] + J["FeFe"]["b" ])/2
+J["NiFe"]["c"]  = (J["NiNi"]["c" ] + J["FeFe"]["c" ])/2
+J["NiFe"]["ab"] = (J["NiNi"]["ab"] + J["FeFe"]["ab"])/2
+J["NiFe"]["ac"] = (J["NiNi"]["ac"] + J["FeFe"]["ac"])/2
 
 # Anisotropy
 # TODO: Check if easy axis is meant to be unaligned
@@ -60,12 +60,7 @@ D = Dict(
     ),
     "Fe" => Dict(
         "a" => 0.62,
-        "b" => 0.00,  # easy axis
-        "c" => 1.56,
-    ),
-    "NiFe" => Dict(
-        "a" => 0.62,
-        "b" => 0.00,  # easy axis
+        "b" => 0.00,
         "c" => 1.56,
     ),
 )
