@@ -3,16 +3,15 @@ using Sunny: getspin
 include("constants.jl");
 include("helper_functions.jl")
 
-Random.seed!(0); # rng seed
-
 units = Units(:meV, :angstrom);
 
 x_ideal = 0.2  # Fe fraction
 sys_repetitions = (5, 5, 5)  # Recommended (5,5,5) at most
+mode = :dipole_uncorrected  # SUN:, :dipole, :dipole_uncorrected
 
 # Make crystal and system
 cryst = Crystal(latvecs["Ni"], [[1/4, 1/4, 0]], 62)
-sys   = System(cryst, [1 => Moment(s=1, g=2)], :dipole_uncorrected)
+sys   = System(cryst, [1 => Moment(s=1, g=2)], mode)
 sys_inhom = to_inhomogeneous(repeat_periodically(sys, sys_repetitions))
 
 # Populate the system randomly with Ni and Fe
@@ -33,7 +32,7 @@ println("Actual Fe fraction: $x_actual")
 ## REMAKE CRYSTAL WITH INTERPOLATED LATTICE VECTORS ##
 lerped_latvecs = lerp(latvecs["Ni"], latvecs["Fe"], x_actual)
 cryst = Crystal(lerped_latvecs, [[1/4, 1/4, 0]], 62)
-sys = System(cryst, [1 => Moment(s=1, g=2)], :dipole_uncorrected)
+sys = System(cryst, [1 => Moment(s=1, g=2)], mode)
 sys_inhom = to_inhomogeneous(repeat_periodically(sys, sys_repetitions))
 
 println("Setting interaction energies...")
@@ -90,4 +89,4 @@ for (i, res) in enumerate(ress)
 end
 display(fig, px_per_unit=2)
 
-GLMakie.save("Disordered Systems/Results/LiNiFePO4_LSWT_KPM_dipole_uncorrected.png", fig, px_per_unit=2)
+GLMakie.save("Disordered Systems/Results/LiNiFePO4_{$mode}_{x=$x_ideal}.png", fig, px_per_unit=2)
