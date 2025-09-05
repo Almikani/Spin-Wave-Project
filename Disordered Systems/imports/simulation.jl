@@ -1,3 +1,5 @@
+using Sunny, GLMakie, LinearAlgebra, Random, FileIO, JLD2, Logging
+
 struct SimulationInfo
 	# PARAMETERS
 	x_ideal::Float64
@@ -9,9 +11,10 @@ struct SimulationInfo
 	energies::AbstractRange
 	qpaths::Vector{Sunny.QPath}
 
-	# Results
+	# RESULTS
 	x_actual::Float64
 	N_Fe::Int
+	N_Ni::Int
 	crystal::Crystal
 	system::System
 	SWT::SpinWaveTheoryKPM
@@ -56,7 +59,8 @@ function simulate_system(;
 		end
 	end
 	N_Fe = count(i->i == "Fe", values(site_atoms))
-	x_actual = N_Fe / length(site_atoms)
+	N_Ni = count(i->i == "Ni", values(site_atoms))
+	x_actual = N_Fe / (N_Fe + N_Ni)
 
 	if print_debug println("{$sim_id} Actual Fe fraction: $x_actual") end
 
@@ -125,6 +129,7 @@ function simulate_system(;
 		# Results
 		x_actual,
 		N_Fe,
+		N_Ni,
 		cryst,
 		sys_inhom,
 		SWT,
@@ -133,22 +138,47 @@ function simulate_system(;
 
 end
 
-function plot_sim(
+function show_sim(sim_results::SimulationInfo)
+	save_sim(sim_results; save_name="", show_plot=true, save_plot=false, save_data=false)
+end
+
+function save_sim(
 	sim_results::SimulationInfo;
-	show::Bool = true,
-	savepath::Union{String, Nothing} = nothing
+	save_name::String,
+	show_plot::Bool = false,
+	save_plot::Bool = true,
+	save_data::Bool = true,
 	)
 
+	# SAVING DATA
+	if save_data
+		try
+			FileIO.mkdir(save_name)
+		catch e
+		end
+
+		Base.with_logger(NullLogger()) do;
+			FileIO.save(string(save_name, "/data.jld2"), "sim_info", sim_results)
+		end
+	end
+	
+	# MAKING AND SAVING FIGURE
 	fig = Figure(size=(1600, 500))
 	for (i, res) in enumerate(sim_results.intensities)
-		ax = plot_intensities!(fig[1, i], res; sim_results.units, title="LiNi₁₋ₓFeₓPO₄ LSWT_KPM")
+		ax = plot_intensities!(fig[1, i], res; sim_results.units, title="LiNi₁₋ₓFeₓPO₄ LSWT_KPM x=$(sim_results.x_actual)")
 	end
 
-	if show
-		display(fig, px_per_unit=2)
+	if show_plot
+		display(fig, px_per_unit=1)
 	end
 
-	if savepath !== nothing
-		GLMakie.save(savepath, fig, px_per_unit=1)
+	if save_plot
+		GLMakie.save(string(save_name, "/fig.png"), fig, px_per_unit=1)
 	end
 end
+
+function load_sim_data(save_name::String)
+	return FileIO.load(string(save_name, "/data.jld2"), "sim_info")
+end
+
+# "Spin-Wave-Project/Disordered Systems/Results/", 
